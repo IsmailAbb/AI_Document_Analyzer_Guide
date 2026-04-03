@@ -45,7 +45,8 @@ router.post('/upload', requireAuth, upload.single('file'), async (req: AuthReque
 
     await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['done', documentId])
     res.json({ documentId, status: 'done' })
-  } catch {
+  } catch (err: unknown){
+    console.error('Upload error:', err)
     await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['error', documentId])
     res.status(500).json({ error: 'AI processing failed', code: 'AI_ERROR' })
   }
