@@ -24,47 +24,40 @@ export default function ResultPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const loadResult = async () => {
-      const res = await getResult(id!)
-      setResult(res.data)
-    }
-    loadResult().catch(console.error)
+    getResult(id!).then(res => setResult(res.data)).catch(console.error)
   }, [id])
 
-  if (!result) return <p style={{ textAlign: 'center', marginTop: 80 }}>Loading...</p>
+  if (!result) return <p className="empty-state" style={{ marginTop: 80 }}>Loading...</p>
 
   const data = result.extracted_data
 
   return (
-    <div style={{ maxWidth: 720, margin: '40px auto', padding: 24 }}>
-      <button onClick={() => navigate('/dashboard')} style={{ marginBottom: 24 }}>
-        ← Back to Dashboard
+    <div className="page result-page">
+      <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>
+        Back to Dashboard
       </button>
-      <h1>Analysis Result</h1>
+      <h1 style={{ margin: '24px 0' }}>Analysis Result</h1>
 
-      <section style={{ marginBottom: 24 }}>
+      <section>
         <h2>Summary</h2>
         <p>{data.summary}</p>
       </section>
 
-      <section style={{ marginBottom: 24 }}>
+      <section>
         <h2>Key Points</h2>
         <ul>
-          {data.key_points?.map((point: string, i: number) => <li key={i}>{point}</li>)}
+          {data.key_points?.map((point, i) => (
+            <li key={i}>{typeof point === 'string' ? point : (point as { name: string }).name}</li>
+          ))}
         </ul>
       </section>
 
-      <section style={{ marginBottom: 24 }}>
+      <section>
         <h2>Entities</h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {data.entities?.map((e: Entity, i: number) => (
-            <span key={i} style={{
-              background: '#e0e7ff',
-              padding: '4px 10px',
-              borderRadius: 99,
-              fontSize: 13
-            }}>
-              {e.name} <span style={{ color: '#6366f1' }}>({e.type})</span>
+        <div className="entity-list">
+          {data.entities?.map((e, i) => (
+            <span key={i} className="entity-tag">
+              {e.name} <span className="entity-type">({e.type})</span>
             </span>
           ))}
         </div>
@@ -72,7 +65,7 @@ export default function ResultPage() {
 
       <section>
         <h2>Document Type</h2>
-        <p style={{ textTransform: 'capitalize' }}>{data.document_type}</p>
+        <span className="doc-type-badge">{data.document_type}</span>
       </section>
     </div>
   )

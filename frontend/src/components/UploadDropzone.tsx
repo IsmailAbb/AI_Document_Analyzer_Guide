@@ -9,38 +9,27 @@ interface Props {
 export default function UploadDropzone({ onUploadComplete }: Props) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'application/pdf': ['.pdf'] },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 10 * 1024 * 1024,
     onDrop: async (accepted, rejected) => {
       if (rejected.length > 0) {
-        toast.error('File rejected — must be a PDF under 10MB')
+        toast.error('File rejected -- must be a PDF under 10MB')
         return
       }
-      const toastId = toast.loading('Uploading and analyzing...')
       try {
         await uploadDocument(accepted[0])
-        toast.success('Analysis complete!', { id: toastId })
+        toast.success('Uploaded! Analyzing in background...')
         onUploadComplete()
       } catch {
-        toast.error('Upload failed', { id: toastId })
+        toast.error('Upload failed')
       }
     }
   })
 
   return (
-    <div
-      {...getRootProps()}
-      style={{
-        border: '2px dashed #ccc',
-        borderRadius: 8,
-        padding: 40,
-        textAlign: 'center',
-        cursor: 'pointer',
-        background: isDragActive ? '#f0f0ff' : 'transparent'
-      }}
-    >
+    <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
       <input {...getInputProps()} />
       <p>{isDragActive ? 'Drop it here!' : 'Drag & drop a PDF, or click to select'}</p>
-      <p style={{ fontSize: 12, color: '#888' }}>Max 10MB</p>
+      <p className="hint">Max 10MB</p>
     </div>
   )
 }

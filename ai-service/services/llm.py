@@ -12,7 +12,7 @@ SYSTEM = '''You are a document analyst. Given document text, return JSON with:
 
 async def analyze(text: str) -> dict:
     resp = await client.chat.completions.create(
-        model='llama3',
+        model='llama3.2:1b',
         response_format={'type': 'json_object'},
         messages=[
             {'role': 'system', 'content': SYSTEM},

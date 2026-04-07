@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useDocumentStatus } from '../hooks/useDocumentStatus'
 
 interface Props {
   doc: {
@@ -7,6 +8,7 @@ interface Props {
     status: string
     created_at: string
   }
+  onStatusChange?: () => void
 }
 
 const statusColor: Record<string, string> = {
@@ -16,37 +18,28 @@ const statusColor: Record<string, string> = {
   error: '#ef4444'
 }
 
-export default function DocumentCard({ doc }: Props) {
+export default function DocumentCard({ doc, onStatusChange }: Props) {
   const navigate = useNavigate()
+  const status = useDocumentStatus(doc.id, doc.status)
+
+  if (status !== doc.status && status === 'done' && onStatusChange) {
+    onStatusChange()
+  }
 
   return (
-    <div style={{
-      border: '1px solid #e5e7eb',
-      borderRadius: 8,
-      padding: 16,
-      marginBottom: 12,
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}>
+    <div className="doc-card">
       <div>
-        <p style={{ fontWeight: 600, margin: 0 }}>{doc.filename}</p>
-        <p style={{ fontSize: 12, color: '#888', margin: 0 }}>
+        <p className="doc-filename">{doc.filename}</p>
+        <p className="doc-date">
           {new Date(doc.created_at).toLocaleDateString()}
         </p>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{
-          background: statusColor[doc.status] || '#ccc',
-          color: 'white',
-          padding: '2px 10px',
-          borderRadius: 99,
-          fontSize: 12
-        }}>
-          {doc.status}
+      <div className="doc-actions">
+        <span className="status-badge" style={{ background: statusColor[status] || '#ccc' }}>
+          {status}
         </span>
-        {doc.status === 'done' && (
-          <button onClick={() => navigate(`/result/${doc.id}`)}>
+        {status === 'done' && (
+          <button className="btn btn-sm" onClick={() => navigate(`/result/${doc.id}`)}>
             View Result
           </button>
         )}

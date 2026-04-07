@@ -24,32 +24,36 @@ router.post('/upload', requireAuth, upload.single('file'), async (req: AuthReque
     [req.user!.id, req.file.originalname, `temp-${Date.now()}`, 'processing']
   )
   const documentId = doc.rows[0].id
+  const fileBuffer = req.file.buffer
+  const fileName = req.file.originalname
 
-  // Call AI service
-  try {
-    const formData = new FormData()
-    const blob = new Blob([req.file.buffer as BlobPart], { type: 'application/pdf' })
-    formData.append('file', blob, req.file.originalname)
+  // Return immediately — process async
+  res.status(202).json({ documentId, status: 'processing' })
 
-    const aiResponse = await axios.post(
-      `${process.env.AI_SERVICE_URL}/analyze/`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    )
+  // Process in background
+  ;(async () => {
+    try {
+      const formData = new FormData()
+      const blob = new Blob([fileBuffer as BlobPart], { type: 'application/pdf' })
+      formData.append('file', blob, fileName)
 
-    // Save result
-    await pool.query(
-      'INSERT INTO analysis_results(document_id, summary, extracted_data, model_used) VALUES($1, $2, $3, $4)',
-      [documentId, aiResponse.data.summary, JSON.stringify(aiResponse.data), 'gpt-4o-mini']
-    )
+      const aiResponse = await axios.post(
+        `${process.env.AI_SERVICE_URL}/analyze/`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
 
-    await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['done', documentId])
-    res.json({ documentId, status: 'done' })
-  } catch (err: unknown){
-    console.error('Upload error:', err)
-    await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['error', documentId])
-    res.status(500).json({ error: 'AI processing failed', code: 'AI_ERROR' })
-  }
+      await pool.query(
+        'INSERT INTO analysis_results(document_id, summary, extracted_data, model_used) VALUES($1, $2, $3, $4)',
+        [documentId, aiResponse.data.summary, JSON.stringify(aiResponse.data), 'llama3.2:1b']
+      )
+
+      await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['done', documentId])
+    } catch (err: unknown) {
+      console.error('AI processing error:', err)
+      await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['error', documentId])
+    }
+  })()
 })
 
 // List user's documents
