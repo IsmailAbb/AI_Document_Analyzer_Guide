@@ -1,10 +1,17 @@
 from openai import AsyncOpenAI
 import os
 
-client = AsyncOpenAI(
-    api_key='ollama',
-    base_url=os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
-)
+# Use OpenAI API if OPENAI_API_KEY is set, otherwise fall back to Ollama
+api_key = os.getenv('OPENAI_API_KEY')
+if api_key:
+    client = AsyncOpenAI(api_key=api_key)
+    MODEL = 'gpt-4o-mini'
+else:
+    client = AsyncOpenAI(
+        api_key='ollama',
+        base_url=os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
+    )
+    MODEL = 'llama3.2:1b'
 
 PROMPTS = {
     'short': '''You are a document analyst. Given document text, return JSON with:
@@ -30,7 +37,7 @@ PROMPTS = {
 async def analyze(text: str, detail: str = 'medium') -> dict:
     system_prompt = PROMPTS.get(detail, PROMPTS['medium'])
     resp = await client.chat.completions.create(
-        model='llama3.2:1b',
+        model=MODEL,
         response_format={'type': 'json_object'},
         messages=[
             {'role': 'system', 'content': system_prompt},

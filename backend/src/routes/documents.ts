@@ -47,7 +47,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req: AuthReque
 
       await pool.query(
         'INSERT INTO analysis_results(document_id, summary, extracted_data, model_used) VALUES($1, $2, $3, $4)',
-        [documentId, aiResponse.data.summary, JSON.stringify(aiResponse.data), 'llama3.2:1b']
+        [documentId, aiResponse.data.summary, JSON.stringify(aiResponse.data), process.env.OPENAI_API_KEY ? 'gpt-4o-mini' : 'llama3.2:1b']
       )
 
       await pool.query('UPDATE documents SET status = $1 WHERE id = $2', ['done', documentId])

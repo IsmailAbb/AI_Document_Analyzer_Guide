@@ -20,6 +20,7 @@ services:
     build: ./ai-service
     environment:
       OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
