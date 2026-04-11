@@ -40,21 +40,23 @@ router.post('/upload', requireAuth, upload.single('file'), async (req: AuthReque
       formData.append('detail', detail)
 
       // Retry up to 3 times (handles Render free tier cold starts)
-      let aiResponse
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          aiResponse = await axios.post(
-            `${process.env.AI_SERVICE_URL}/analyze/`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
-          )
-          break
-        } catch (retryErr) {
-          if (attempt === 3) throw retryErr
-          console.log(`AI service attempt ${attempt} failed, retrying in 5s...`)
-          await new Promise(r => setTimeout(r, 5000))
+      const callAi = async () => {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            return await axios.post(
+              `${process.env.AI_SERVICE_URL}/analyze/`,
+              formData,
+              { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+            )
+          } catch (retryErr) {
+            if (attempt === 3) throw retryErr
+            console.log(`AI service attempt ${attempt} failed, retrying in 5s...`)
+            await new Promise(r => setTimeout(r, 5000))
+          }
         }
+        throw new Error('unreachable')
       }
+      const aiResponse = await callAi()
 
       await pool.query(
         'INSERT INTO analysis_results(document_id, summary, extracted_data, model_used) VALUES($1, $2, $3, $4)',
